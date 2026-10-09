@@ -34,7 +34,7 @@ project, which has 11 Blueprint nodes and a final theorem fully proven in Lean.
 ```bash
 git submodule add https://github.com/eyalk11/lean-dump.git scripts/lean-dump
 git submodule update --init --recursive
-ython scripts/lean-dump/dump_theorems_with_lean.py --blueprint blueprint/src/my_case.tex \
+python scripts/lean-dump/dump_theorems_with_lean.py --blueprint blueprint/src/my_case.tex \
     --ledger my_case_ledger.json --final thm:main --output site/my_case.html
 ```
 
