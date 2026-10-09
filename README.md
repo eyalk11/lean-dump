@@ -2,6 +2,13 @@
 
 **Every Blueprint statement beside its Lean proof, and what that proof rests on.**
 
+A modern replacement for the standard Blueprint with its dependency graph:
+
+- **Verifies much more**: proof axioms and `sorry`, conditional hypotheses,
+  marker consistency, Blueprint ↔ Lean dependency agreement, audit freshness.
+- **Displays much more**: typeset statement and proof beside the Lean source,
+  named propositions unfolded, explicit hypotheses, Lean-only dependencies.
+
 lean-dump turns a [leanblueprint](https://github.com/PatrickMassot/leanblueprint)
 `.tex` into one HTML page. Each node's statement and proof sits beside the Lean
 declaration that formalises it. The page shows which claims are proved
