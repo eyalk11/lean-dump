@@ -70,6 +70,7 @@
     h4 { margin:1.6rem 0 .4rem; font-size:1rem; color:var(--lime); }
     .toc { columns:2; max-width:700px; padding-left:1.2rem; color:var(--muted); }
     @media(max-width:560px) { .toc { columns:1; } }
+    .live iframe { width:100%; height:min(78vh,760px); border:1px solid var(--line); border-radius:8px; background:#111; }
   </style>
 </head>
 <body>
@@ -82,8 +83,11 @@
       <p class="eyebrow">BLUEPRINT ⇄ LEAN</p>
       <h1>Every Blueprint statement beside its Lean proof, and what that proof rests on.</h1>
       <p class="lede">lean-dump turns a <a href="https://github.com/PatrickMassot/leanblueprint">leanblueprint</a> <code>.tex</code> into one HTML page. Each node’s typeset statement and proof sits beside the Lean declaration that formalises it. The page states which claims are proved unconditionally, which rest on <code>sorry</code>, an axiom or an unproved hypothesis, and where the Blueprint and Lean disagree.</p>
-      <div class="actions"><a class="button primary" href="#usage">Generate a page</a><a class="button" href="checks.html">How to read a page</a><a class="button" href="https://github.com/eyalk11/lean-dump">Source on GitHub</a></div>
-      <figure id="screenshot" class="shot"><img src="screenshot.png" alt="A comparison page: a Blueprint theorem with its proof on the left, its Lean counterpart with the named statement definition, explicit hypotheses and proof on the right" width="1646" height="952"><figcaption>A generated page. The final theorem is shown typeset from the Blueprint on the left and as its Lean declaration on the right, with the named proposition it proves, its explicit hypotheses, and a dependency difference flagged above.</figcaption></figure>
+      <div class="actions"><a class="button primary" href="example/read-k-short-capture.html">See a live example</a><a class="button" href="#usage">Generate a page</a><a class="button" href="checks.html">How to read a page</a><a class="button" href="https://github.com/eyalk11/lean-dump">Source on GitHub</a></div>
+      <figure id="example" class="shot live">
+        <iframe src="example/read-k-short-capture.html" title="Live example: a generated lean-dump page" loading="lazy"></iframe>
+        <figcaption><strong>A real generated page</strong>, live: the signed read-<em>k</em> short-capture closed case of the Fourier Entropy–Influence project, which has 11 Blueprint nodes and a final theorem fully proven in Lean. <a href="example/read-k-short-capture.html">Open it full-screen →</a></figcaption>
+      </figure>
 
       <h2>Contents</h2>
       <ol class="toc">

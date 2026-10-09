@@ -24,7 +24,10 @@ where the Blueprint and Lean disagree.
 [Setup](https://eyalk11.github.io/lean-dump/#setup) ·
 [How to read a page](https://eyalk11.github.io/lean-dump/checks.html)
 
-![A generated page: the Blueprint node typeset on the left, its Lean counterpart on the right](docs/screenshot.png)
+### 🔬 Live example: [a real generated page](https://eyalk11.github.io/lean-dump/example/read-k-short-capture.html)
+
+The signed read-*k* short-capture closed case of the Fourier Entropy–Influence
+project, which has 11 Blueprint nodes and a final theorem fully proven in Lean.
 
 ## Quick start
 
