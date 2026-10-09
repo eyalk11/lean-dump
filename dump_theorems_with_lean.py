@@ -33,7 +33,7 @@ LEAN_DECL = re.compile(
     r"(?m)^(?P<kw>theorem|lemma|example)\s+(?P<name>[A-Za-z_][\w'.]*)"
 )
 # The manual for these pages, published from docs/ of this repository.
-MANUAL_URL = "https://eyalk11.github.io/lean-dump/"
+MANUAL_URL = "https://eyalk11.github.io/lean-dump/checks.html"
 PART_RE = re.compile(r"\\part\{Part\s+([A-G])\b", re.I)
 BEGIN_RE = re.compile(
     r"\\begin\{(" + "|".join(THEOREM_ENVS) + r")\}"
@@ -1949,7 +1949,8 @@ def main() -> None:
         help="curated JSON correspondence ledger (optional)",
     )
     parser.add_argument("--threshold", type=float, default=0.55)
-    parser.add_argument("--format", choices=("markdown", "html", "json"), default="markdown")
+    parser.add_argument("--format", choices=("markdown", "html", "json"),
+                        help="manuscript mode: default markdown; --blueprint: html only")
     parser.add_argument(
         "--closed-case-pages", type=Path, metavar="CONFIG",
         help="write every closed-case page listed in CONFIG, with its Blueprint, ledger and "
@@ -1958,7 +1959,8 @@ def main() -> None:
     parser.add_argument(
         "--blueprint", type=Path,
         help="one closed-case Blueprint .tex: write its nodes beside their Lean declarations, "
-             "ordered external inputs, final theorem, middle statements bottom-up (HTML only)",
+             "ordered external inputs, final theorem, middle statements bottom-up. HTML; "
+             "--output defaults to <blueprint>_with_lean.html beside the .tex",
     )
     parser.add_argument(
         "--ledger", type=Path,
@@ -2003,10 +2005,10 @@ def main() -> None:
         _exit_on_page_errors(args.allow_page_errors)
         return
     if args.blueprint:
-        if args.format != "html":
-            parser.error("--blueprint writes HTML only; pass --format html")
+        if args.format not in (None, "html"):
+            parser.error("--blueprint writes HTML only")
         if args.output is None:
-            parser.error("--blueprint needs --output")
+            args.output = args.blueprint.with_name(args.blueprint.stem + "_with_lean.html")
         write_closed_case_page(
             args.blueprint, args.ledger, args.final, args.output,
             extract_lean(args.lean_dir, qualified=True), args.lean_dir,
@@ -2017,6 +2019,7 @@ def main() -> None:
 
     if args.manuscript is None or args.output is None:
         parser.error("manuscript mode needs --manuscript and --output")
+    args.format = args.format or "markdown"
     manuscripts = extract_manuscript(args.manuscript)
     lean_items = extract_lean(args.lean_dir)
     matches = match_items(

@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>About the Lean checks · lean-dump</title>
-  <meta name="description" content="How to read the Lean comparison page: audit freshness, hypotheses, dependencies, and examples of warning banners.">
+  <title>lean-dump · Blueprint beside Lean</title>
+  <meta name="description" content="Side-by-side leanblueprint/Lean pages with axiom, hypothesis, dependency and freshness checks.">
   <style>
     :root { color-scheme: dark; --page:#081013; --ink:#f4f7f5; --muted:#b4c2bc; --lime:#b8ff61; --cyan:#39d4ff; --line:#344047; font-family:system-ui,sans-serif; }
     * { box-sizing:border-box; }
@@ -42,60 +42,199 @@
     .shot { margin:2rem 0 0; }
     .shot img { width:100%; height:auto; border:1px solid var(--line); border-radius:8px; }
     .shot figcaption { color:var(--muted); font-size:.9rem; margin-top:.5rem; }
+      header { position:sticky; top:0; background:var(--page); z-index:2; }
+    .actions { display:flex; flex-wrap:wrap; gap:.8rem; margin:1.6rem 0 0; }
+    .button { display:inline-block; padding:.55rem 1rem; border:1px solid var(--cyan); border-radius:.35rem; text-decoration:none; font-weight:650; }
+    .button.primary { background:var(--cyan); color:#04161d; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); margin:1.5rem 0; }
+    .grid > section { padding:1.3rem 1.4rem; background:#101b20; }
+    .grid p, .grid ul { margin:.5rem 0 0; color:var(--muted); }
+    .grid ul { padding-left:1.1rem; }
+    .flow { display:grid; grid-template-columns:repeat(4,1fr); gap:.8rem; margin:1.5rem 0; counter-reset:step; }
+    .flow > div { position:relative; padding:1rem 1.1rem; border:1px solid var(--line); border-top:3px solid var(--lime); background:#101b20; border-radius:.3rem; }
+    .flow > div::before { counter-increment:step; content:"STEP " counter(step); display:block; color:var(--lime); font-size:.8rem; font-weight:700; letter-spacing:.06em; margin-bottom:.35rem; }
+    .flow p { margin:.4rem 0 0; color:var(--muted); font-size:.95rem; }
+    .flow .io { display:block; margin-top:.6rem; font-size:.85rem; color:var(--ink); }
+    @media(max-width:900px) { .flow { grid-template-columns:1fr 1fr; } }
+    @media(max-width:560px) { .flow { grid-template-columns:1fr; } }
+    table { width:100%; border-collapse:collapse; margin:1rem 0 1.5rem; font-size:.95rem; }
+    th, td { text-align:left; vertical-align:top; padding:.6rem .7rem; border-bottom:1px solid var(--line); }
+    th { color:var(--lime); font-size:.85rem; letter-spacing:.04em; font-weight:700; }
+    td:first-child { white-space:nowrap; }
+    .table-wrap { overflow-x:auto; }
+    .tag { display:inline-block; padding:.05rem .45rem; border-radius:.25rem; font-size:.8rem; font-weight:700; white-space:nowrap; }
+    .tag.err { color:#ffb1b1; background:#301c20; } .tag.warn { color:#ffdc91; background:#2c2517; }
+    .tag.cond { color:#c2d8ff; background:#14253f; } .tag.fatal { color:#04161d; background:#ec7777; } .tag.ok { color:#d0f2dc; background:#142b22; }
+    pre { background:#0d171b; border:1px solid var(--line); border-radius:.35rem; padding:.9rem 1rem; overflow-x:auto; font-size:.9rem; line-height:1.5; }
+    h2 { scroll-margin-top:5rem; } h3 { scroll-margin-top:5rem; }
+    h4 { margin:1.6rem 0 .4rem; font-size:1rem; color:var(--lime); }
+    .toc { columns:2; max-width:700px; padding-left:1.2rem; color:var(--muted); }
+    @media(max-width:560px) { .toc { columns:1; } }
   </style>
 </head>
 <body>
   <div class="shell">
     <header>
-      <a class="brand" href="https://github.com/eyalk11/lean-dump">lean-dump</a>
-      <nav aria-label="Main"><a href="#screenshot">Example page</a><a href="#examples">Warning examples</a></nav>
+      <a class="brand" href="./">lean-dump</a>
+      <nav aria-label="Main"><a href="#how">How it works</a><a href="#features">Features</a><a href="#verifications">Verifications</a><a href="#usage">Usage</a><a href="#setup">Setup</a><a href="checks.html">Reading a page</a><a href="https://github.com/eyalk11/lean-dump">GitHub</a></nav>
     </header>
     <main>
-      <p class="eyebrow">ABOUT THE LEAN CHECKS</p>
-      <h1>Read the proof status.</h1>
-      <p class="lede">The Lean comparison page places each Blueprint statement beside its formal declaration. Its checks help you inspect what was formalized, what the proof depends on, and whether the saved audit still matches the source.</p>
-      <figure id="screenshot" class="shot"><img src="screenshot.png" alt="A comparison page: a Blueprint theorem with its proof on the left, its Lean counterpart with the named statement definition and proof on the right" width="1646" height="952"><figcaption>A comparison page: the Blueprint node on the left, its Lean counterpart on the right.</figcaption></figure>
+      <p class="eyebrow">BLUEPRINT ⇄ LEAN</p>
+      <h1>Every Blueprint statement beside its Lean proof, and what that proof rests on.</h1>
+      <p class="lede">lean-dump turns a <a href="https://github.com/PatrickMassot/leanblueprint">leanblueprint</a> <code>.tex</code> into one HTML page. Each node’s typeset statement and proof sits beside the Lean declaration that formalises it. The page states which claims are proved unconditionally, which rest on <code>sorry</code>, an axiom or an unproved hypothesis, and where the Blueprint and Lean disagree.</p>
+      <div class="actions"><a class="button primary" href="#usage">Generate a page</a><a class="button" href="checks.html">How to read a page</a><a class="button" href="https://github.com/eyalk11/lean-dump">Source on GitHub</a></div>
+      <figure id="screenshot" class="shot"><img src="screenshot.png" alt="A comparison page: a Blueprint theorem with its proof on the left, its Lean counterpart with the named statement definition, explicit hypotheses and proof on the right" width="1646" height="952"><figcaption>A generated page. The final theorem is shown typeset from the Blueprint on the left and as its Lean declaration on the right, with the named proposition it proves, its explicit hypotheses, and a dependency difference flagged above.</figcaption></figure>
 
-      <h2>Four questions, four different checks</h2>
-      <div class="checks">
-        <section class="check"><span class="number">01 / FRESHNESS</span><h3>Does the audit match this source?</h3><p>Source hashes cover Lean files, the audit code, toolchain and dependency lockfile. Changed inputs make the audit <strong>stale</strong>; a historical report without hashes has <strong>unknown</strong> freshness. A current report records a successful build and audit of those inputs.</p></section>
-        <section class="check"><span class="number">02 / AXIOMS</span><h3>What does the proof ultimately rely on?</h3><p>Lean’s axiom collection follows dependencies transitively, including dependencies of dependencies. It detects <code>sorryAx</code> and project axioms even when they come from another lemma. The usual Lean axioms <code>propext</code>, <code>Classical.choice</code> and <code>Quot.sound</code> are allowed.</p></section>
-        <section class="check"><span class="number">03 / HYPOTHESES</span><h3>Under which assumptions is it true?</h3><p>Expandable details show proposition hypotheses and instances from the elaborated type, including unnamed arrows, implicit assumptions and section variables. The full type is available too. The existing conditional-status check separately flags names beginning <code>CONJ_</code>, <code>UNPROVED</code> or <code>EXT_</code>.</p></section>
-        <section class="check"><span class="number">04 / CONSISTENCY</span><h3>Do the documented dependencies agree?</h3><p>The Blueprint’s dependency paths are compared with compiled type and proof references among mapped nodes. Audited project helpers are followed; compiler-generated helpers are expanded. External library internals are not expanded. Differences are prompts for review, since two proofs can use different arguments.</p></section>
+      <h2>Contents</h2>
+      <ol class="toc">
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#features">What a page shows</a></li>
+        <li><a href="#verifications">Verifications</a></li>
+        <li><a href="#usage">Usage and options</a></li>
+        <li><a href="#inputs">Inputs</a></li>
+        <li><a href="#setup">Setting up a project</a></li>
+        <li><a href="#conventions">Conventions</a></li>
+        <li><a href="#limits">What it does not claim</a></li>
+      </ol>
+
+      <h2 id="how">How it works</h2>
+      <p>Lean runs once, in an audit step whose results are saved as JSON with source hashes. The page generator is pure Python: it reads the Blueprint, the Lean sources as text and the saved audit, and never invokes Lean. A page can therefore be regenerated in seconds, and it states plainly when the evidence it is built on is out of date.</p>
+      <div class="flow">
+        <div><strong>Audit Lean</strong><p><code>run_lean_audit.py</code> runs <code>lake build</code> and then the exporter. For every project declaration it collects the transitive axioms, the provenance-prefixed hypotheses, the elaborated binders and the compiled dependencies.</p><span class="io">→ <code>lean/axiom_footprint.json</code>, <code>declaration_details.json</code>, <code>.meta.json</code> (hashes written last)</span></div>
+        <div><strong>Read the Blueprint</strong><p>The generator parses every labelled environment, with its <code>\lean</code>, <code>\leanok</code>/<code>\notready</code> (statement and proof), <code>\uses</code> and <code>\literature</code>. An optional ledger JSON can override or annotate any node.</p><span class="io">← <code>blueprint.tex</code>, <code>ledger.json</code></span></div>
+        <div><strong>Resolve and check</strong><p>Lean sources are scanned as text for declarations, namespaces and references. Every name is resolved, the static checks run, nodes are grouped and put in dependency order, and the saved audit is matched against the current source hashes.</p><span class="io">← <code>lean/**/*.lean</code>, saved audit</span></div>
+        <div><strong>Write the page</strong><p>The output is a single HTML file. In the browser, statements are typeset by KaTeX with the Blueprint’s own preamble macros (through gh-tex-viewer’s <code>render.js</code>). Errors are printed and set the exit code.</p><span class="io">→ <code>blueprint_with_lean.html</code></span></div>
       </div>
-      <p class="scope"><strong>Check the evidence’s status first.</strong> Generating or opening this page does not run Lean. Missing or stale audit data leaves the new hypothesis and consistency checks unchecked. A dependency match does not establish that the manuscript and Lean statements have identical meaning.</p>
+      <p class="scope"><strong>Two kinds of evidence, kept apart.</strong> Static checks, such as whether names resolve, the markers agree and <code>\literature</code> is present, are recomputed on every run. Audit-backed checks, such as axioms, hypotheses and dependency consistency, are only as current as the saved audit. When the hashes no longer match the working tree, those checks are reported as stale or unchecked, and never as clean.</p>
 
-      <h2 id="examples">When a warning appears</h2>
-      <p>The banners below are <strong>illustrative examples</strong>, not live findings about this proof. The comparison page reports its own status.</p>
-      <div class="examples">
-        <section class="example"><p class="example-label">EXAMPLE · historical report</p><div class="banner warning">Audit freshness: unknown</div><p>The saved report has no verifiable source hashes. “Unknown” does not mean the proof is wrong; it means the report cannot certify this version. Generate a new source-bound audit.</p></section>
-        <section class="example"><p class="example-label">EXAMPLE · changed source</p><div class="banner warning">Audit freshness: stale — sources or configuration changed</div><p>A proof, dependency pin, toolchain or audit input changed after the audit. Even a declaration whose name stayed the same needs a new check.</p></section>
-        <section class="example"><p class="example-label">EXAMPLE · missing audit</p><div class="banner warning">NOT CHECKED: the axiom footprint is absent</div><p>There is no saved dependency evidence. Missing evidence must not be read as “no unproved dependencies.”</p></section>
-        <section class="example"><p class="example-label">EXAMPLE · inherited proof hole</p><div class="banner conditional">CONDITIONAL: Proof depends on sorryAx</div><p>The proof reaches an admitted step, possibly several lemmas away. It cannot be presented as an unconditional result. An explicitly named project axiom or unproved hypothesis is reported similarly, with its name.</p></section>
-        <section class="example"><p class="example-label">EXAMPLE · missing formal counterpart</p><div class="banner error">ERROR: Lean declaration not found: Example.missingLemma</div><p>A Blueprint node points to a declaration the source extractor cannot find. Check the mapping, spelling and source coverage; a green Blueprint marker alone does not fix the missing counterpart.</p></section>
-        <section class="example"><p class="example-label">EXAMPLE · dependency discrepancy</p><div class="banner warning">Dependency difference — Lean reaches lem:helper without a Blueprint dependency path</div><p>An amber badge and an expanded notice mark each affected statement. Inspect the two proofs. The Blueprint may have omitted a dependency, or Lean may use a different argument. The reverse discrepancy—a documented dependency absent from the compiled closure—is also reported.</p></section>
-        <section class="example"><p class="example-label">EXAMPLE · incomplete Blueprint metadata</p><div class="banner warning">INCOMPLETE: proof has no \leanok marker</div><p>The Blueprint has not marked the proof as formalized. A Lean proof may exist, but the documentation must be checked before adding the marker.</p></section>
+      <h2 id="features">What a page shows</h2>
+      <div class="grid">
+        <section><h3>Side-by-side cards</h3><p>Each Blueprint node is shown typeset, with a <em>LaTeX source</em> toggle and its file and line. Beside it is the Lean declaration’s source with file and line. Trailing <code>#print</code> diagnostics are trimmed from the snippet; docstrings are kept.</p></section>
+        <section><h3>Ordered by the proof</h3><p>The sections are: External inputs → Final theorem → Definitions → Middle statements → Not used by the final theorem. Statements appear bottom-up from <code>\uses</code>, each after everything it uses. A <code>\uses</code> cycle is an error.</p></section>
+        <section><h3>Named propositions unfolded</h3><p>A theorem stated as <code>thm : UNPROVED_x</code> gets a <em>Statement definition</em> block with the proposition’s source. The <em>Full elaborated type</em> inspector shows Lean’s unfolded type, quantifiers included.</p></section>
+        <section><h3>Explicit hypotheses</h3><p>A panel lists every binder from the elaborated type: unnamed arrows, implicit and instance arguments, and section variables. Each is marked explicit, implicit or instance, and flagged when it is a proposition.</p></section>
+        <section><h3>External inputs found in Lean</h3><p>Besides the Blueprint’s own external nodes, the page lists every <code>EXT_</code> declaration that the page’s Lean code reaches, even when no Blueprint node names it. <code>EXT_</code> aliases are not counted as inputs.</p></section>
+        <section><h3>Lean-only definitions and lemmas</h3><p>The page also cards the definitions and lemmas that its declarations reach but the Blueprint never mentions. Header checkboxes hide or show them. <code>--no-lean-defs</code> / <code>--no-lean-lemmas</code> leave them out entirely, which matters because they can add megabytes.</p></section>
+        <section><h3>Links both ways</h3><p>Every card lists <em>Uses</em> / <em>Used by</em> from the Blueprint and <em>Uses in Lean</em> / <em>Used in Lean by</em> from Lean references. Labels and qualified Lean names in remarks link to their cards.</p></section>
+        <section><h3>Status at a glance</h3><p>The header gives the node counts per section, the number of unresolved names, the number of conditional statements and the externals missing a reference. A one-line proof summary for the final theorem appears only when every check behind it passes.</p></section>
+        <section><h3>Curated remarks</h3><p>A ledger can attach a status, a remark and a <code>lean_statement</code> to any node, for example to name the extra declarations behind a node with several conclusions.</p></section>
       </div>
 
-      <h2>The proof summary</h2>
-      <p>“The final theorem is fully proven from Lean’s standard axioms” appears in the audit box only when the current audit covers the final theorem, it has no nonstandard axiom or flagged unproved hypothesis, and its Blueprint statement and proof are marked complete. “Sorry-free” includes the proof’s transitive dependencies. Both claims concern the final theorem, not the entire repository. Ordinary mathematical hypotheses still apply.</p>
+      <h2 id="verifications">Verifications</h2>
+      <p>Everything the page asserts comes from one of the checks below. <span class="tag fatal">fatal</span> stops generation. <span class="tag err">ERROR</span> marks the card and makes the run exit nonzero unless <code>--allow-page-errors</code> is given. <span class="tag warn">INCOMPLETE</span>, <span class="tag cond">CONDITIONAL</span> and <span class="tag warn">NOT CHECKED</span> are shown on the page and in the summary. The full guide to the page banners is <a href="checks.html">How to read a page</a>.</p>
 
-      <h2>When a theorem names a proposition</h2>
-      <p>A signature such as <code>theorem main_bound : UNPROVED_main_bound</code> uses a named proposition as its statement. The comparison page shows that proposition’s source in an expanded <strong>Statement definition</strong> block above the proof, when the current compiled audit resolves it. The name alone does not determine proof status.</p>
+      <h4>Static checks, every run, no Lean needed</h4>
+      <div class="table-wrap"><table>
+        <tr><th>Check</th><th>What it catches</th><th>Result</th></tr>
+        <tr><td>Lean name resolves</td><td>A <code>\lean{}</code> or ledger name that is not a single identifier, or that is declared nowhere under <code>--lean-dir</code>. This is a textual scan of declarations and namespaces, so typos and wrong namespaces are caught without compiling.</td><td><span class="tag fatal">fatal</span> if the node is <code>\leanok</code>, else <span class="tag err">ERROR</span></td></tr>
+        <tr><td>One declaration per node</td><td>A node with several <code>\lean{}</code> macros; the extra names belong in the ledger’s <code>lean_statement</code>.</td><td><span class="tag fatal">fatal</span></td></tr>
+        <tr><td>Claim with no counterpart</td><td>A <code>\leanok</code> node, or a ledger <code>"status": "full"</code>, that names no Lean declaration. It would otherwise show green with nothing behind it.</td><td><span class="tag fatal">fatal</span></td></tr>
+        <tr><td>Statement marker</td><td>A node with <code>\notready</code>, or with no <code>\leanok</code> on its statement.</td><td><span class="tag err">ERROR</span> / <span class="tag warn">INCOMPLETE</span></td></tr>
+        <tr><td>Proof marker</td><td>A theorem, lemma, proposition or corollary whose proof is not <code>\leanok</code>: it is <code>\notready</code>, unmarked, or missing.</td><td><span class="tag err">ERROR</span> / <span class="tag warn">INCOMPLETE</span></td></tr>
+        <tr><td>Final theorem Lean-ready</td><td>The configured final theorem lacks a resolved declaration, a statement <code>\leanok</code> or a proof <code>\leanok</code>.</td><td><span class="tag err">ERROR</span>, nonzero exit</td></tr>
+        <tr><td>Literature locator</td><td>An external input without <code>\literature{reference}{locator}</code>.</td><td>flagged on the card and counted</td></tr>
+        <tr><td>Dependency order</td><td>A <code>\uses</code> cycle, or <code>--final</code> naming a label that does not exist.</td><td><span class="tag fatal">fatal</span></td></tr>
+        <tr><td>Typesetting</td><td>Math that KaTeX cannot render is shown as source in amber, and the header counts it. If the CDN is unreachable, every statement falls back to source.</td><td>shown in the page</td></tr>
+      </table></div>
 
-      <p>The <strong>Full elaborated type</strong> inspector unfolds named statement definitions through Lean, showing their quantifiers and conclusion. The source definition remains separately visible in the <strong>Statement definition</strong> block.</p>
+      <h4>Audit-backed checks, from the saved Lean audit</h4>
+      <div class="table-wrap"><table>
+        <tr><th>Check</th><th>What it catches</th><th>Result</th></tr>
+        <tr><td>Freshness</td><td>The SHA-256 of the Lean sources, <code>scripts/*.lean</code>, toolchain, lakefile, manifest, <code>axiom_clean.txt</code> and the audit code, compared with the working tree. Installed dependency checkouts are checked against their locked revisions.</td><td>current / <span class="tag warn">stale</span> / <span class="tag warn">unknown</span></td></tr>
+        <tr><td>Axioms</td><td>The proof transitively reaches <code>sorryAx</code> or a project axiom. Only <code>propext</code>, <code>Classical.choice</code> and <code>Quot.sound</code> are allowed.</td><td><span class="tag cond">CONDITIONAL</span></td></tr>
+        <tr><td>Conditional statement</td><td>A hypothesis binder mentions a <code>CONJ_</code>, <code>UNPROVED</code> or <code>EXT_</code> name. The conclusion is not scanned, so a theorem that <em>proves</em> <code>UNPROVED_x</code> is not marked conditional on it.</td><td><span class="tag cond">CONDITIONAL</span></td></tr>
+        <tr><td>Footprint coverage</td><td>The footprint is missing, or older than a declaration on the page. A missing audit is never treated as clean.</td><td><span class="tag warn">NOT CHECKED</span></td></tr>
+        <tr><td>Blueprint consistency</td><td>The <code>\uses</code> paths among mapped nodes, compared with Lean’s compiled type and proof references. Project helpers are followed, compiler-generated ones are expanded, and library internals are not. Differences are reported in both directions.</td><td><span class="tag warn">Dependency difference</span></td></tr>
+        <tr><td>Proof summary</td><td>“Fully proven from Lean’s standard axioms … sorry-free” is printed only when the audit is current, covers the final theorem, finds no non-standard axiom or flagged hypothesis, and statement and proof are both <code>\leanok</code>.</td><td><span class="tag ok">summary</span> or nothing</td></tr>
+      </table></div>
 
-      <h2>An ordinary hypothesis is not a warning</h2>
-      <div class="ordinary"><code>h : n ≥ 2</code> describes the theorem’s scope. It does not mean that a supporting theorem remains unproved.</div>
-      <p>Read every displayed assumption in context. A clean axiom audit can accompany a conditional theorem. Conversely, a theorem with no explicit assumptions can still inherit an axiom or <code>sorry</code> from its proof dependencies.</p>
+      <h4>Checks the audit run itself enforces</h4>
+      <div class="table-wrap"><table>
+        <tr><th>Check</th><th>What it catches</th><th>Result</th></tr>
+        <tr><td>Sorry confinement</td><td>A <code>sorryAx</code> written directly in a declaration outside <code>*_deps</code> modules and the declared exceptions. This is semantic, so prose that mentions “sorry” does not trip it and a macro-hidden <code>sorry</code> does.</td><td>audit fails, nothing written</td></tr>
+        <tr><td>Claimed-clean list</td><td>A name in <code>lean/axiom_clean.txt</code> that no longer exists or is no longer axiom-clean.</td><td>audit fails</td></tr>
+        <tr><td>Stable inputs</td><td>Sources or dependency pins changing during the build or audit. The metadata is written last, so an interrupted run never looks current.</td><td>audit fails</td></tr>
+      </table></div>
 
-      <h2>What about the graph colors and #print axioms?</h2>
-      <p>The graphical Blueprint reads manually supplied <code>\leanok</code> markers. Its green colors report those markers; the graph itself does not execute Lean. The comparison page adds the saved dependency audit and the checks described above.</p>
-      <p><code>#print axioms theoremName</code> asks Lean for that declaration’s transitive axiom dependencies. An old output quoted in a comment is historical evidence, and a command appearing in source is only an instruction to run it. Trailing diagnostic commands are omitted from displayed theorem snippets; they remain in the Lean source.</p>
-      <p>Mathematical review still needs to compare quantifiers, assumptions, constants, normalization and conclusions against the manuscript. These checks make that review easier; they do not replace it.</p>
-      <p><a href="https://github.com/eyalk11/lean-dump">lean-dump on GitHub</a></p>
+      <h2 id="usage">Usage and options</h2>
+      <p>Add lean-dump to the project, recursively so that gh-tex-viewer comes with it, and run the generator from the project root. It needs the standard library only, on Python 3.9 or later.</p>
+<pre>git submodule add https://github.com/eyalk11/lean-dump.git scripts/lean-dump
+git submodule update --init --recursive</pre>
+      <h4>One closed case</h4>
+      <p>No configuration file is needed. The output defaults to <code>&lt;blueprint&gt;_with_lean.html</code> beside the <code>.tex</code>.</p>
+<pre>python scripts/lean-dump/dump_theorems_with_lean.py --blueprint blueprint/src/my_case.tex
+python scripts/lean-dump/dump_theorems_with_lean.py --blueprint blueprint/src/my_case.tex \
+    --ledger my_case_ledger.json --final thm:main --output site/my_case.html</pre>
+      <h4>Several pages at once</h4>
+<pre>python scripts/lean-dump/dump_theorems_with_lean.py --closed-case-pages pages.json</pre>
+      <div class="table-wrap"><table>
+        <tr><th>Option</th><th>Meaning</th></tr>
+        <tr><td><code>--blueprint TEX</code></td><td>The Blueprint to render (HTML).</td></tr>
+        <tr><td><code>--ledger JSON</code></td><td>Optional correspondence ledger, keyed by Blueprint label.</td></tr>
+        <tr><td><code>--final LABEL</code></td><td>The final theorem; repeatable. Omit it when unknown, and nodes then are not split into used and unused.</td></tr>
+        <tr><td><code>--output HTML</code></td><td>Where to write the page. Default: beside the Blueprint.</td></tr>
+        <tr><td><code>--closed-case-pages JSON</code></td><td>Write every page listed in a config file instead.</td></tr>
+        <tr><td><code>--lean-dir DIR</code></td><td>The Lean source tree. Default <code>lean</code>; the audit files are read from here too.</td></tr>
+        <tr><td><code>--no-lean-defs</code></td><td>Leave out Lean-only definitions (<code>def</code>, <code>abbrev</code>, <code>structure</code>, <code>class</code>, <code>inductive</code>, <code>instance</code>) that the page’s declarations reach without a Blueprint node. They are dropped from the reference lists too.</td></tr>
+        <tr><td><code>--no-lean-lemmas</code></td><td>Likewise for Lean-only theorems and lemmas: the page shows only what the Blueprint names.</td></tr>
+        <tr><td><code>--allow-page-errors</code></td><td>Exit 0 even when a page reported an ERROR. Use it only for cases already known to be bad.</td></tr>
+      </table></div>
+
+      <h2 id="inputs">Inputs</h2>
+      <h4>Blueprint markers</h4>
+      <div class="table-wrap"><table>
+        <tr><th>Marker</th><th>Meaning</th></tr>
+        <tr><td><code>\lean{Ns.name}</code></td><td>The one fully qualified Lean counterpart of the node.</td></tr>
+        <tr><td><code>\leanok</code></td><td>On the statement: the Lean statement matches the TeX exactly, in its quantifiers, hypotheses, constants, normalisation and conclusion. Inside the proof: the proof is formalised.</td></tr>
+        <tr><td><code>\notready</code></td><td>Not formalised, or the Lean statement is only related, weaker, stronger or differently normalised.</td></tr>
+        <tr><td><code>\uses{a, b}</code></td><td>Dependency edges. They set the page order and are compared with Lean.</td></tr>
+        <tr><td><code>\literature{ref}{locator}</code></td><td>Required on external inputs, with an exact theorem or equation number.</td></tr>
+        <tr><td><code>ext:</code> label</td><td>Marks a node as an external input, as an <code>EXT_</code> Lean name does.</td></tr>
+      </table></div>
+      <h4>Ledger (optional)</h4>
+<pre>{
+  "thm:main": {"lean": "Ns.main", "status": "full", "marker": "leanok",
+               "lean_remark": "why this is the counterpart",
+               "lean_statement": "declarations proving the node's other clauses"},
+  "ext:input": {"lean": "Ns.EXT_input", "status": "external-input"}
+}</pre>
+      <p><code>lean</code> overrides <code>\lean{}</code>, and <code>null</code> means there is no counterpart. A ledger cannot claim <code>"full"</code> for a node with no counterpart.</p>
+      <h4>Pages config (only for <code>--closed-case-pages</code>)</h4>
+<pre>{"pages": [{"blueprint": "blueprint/src/a.tex", "ledger": "a.json", "final": ["thm:main"],
+            "output": "site/a.html", "no_lean_defs": false, "no_lean_lemmas": false}]}</pre>
+      <h4>Saved audit (in <code>--lean-dir</code>)</h4>
+      <div class="table-wrap"><table>
+        <tr><th>File</th><th>Content</th></tr>
+        <tr><td><code>axiom_footprint.json</code></td><td><code>{"Ns.decl": {"axioms": [...], "assumes": [...]}}</code> for every project declaration.</td></tr>
+        <tr><td><code>declaration_details.json</code></td><td>For every declaration: <code>type</code>, <code>expanded_type</code>, <code>binders</code> (name, type, binder kind, is_proposition) and <code>dependencies</code>.</td></tr>
+        <tr><td><code>axiom_footprint.meta.json</code></td><td>The schema version, time, commit, Lean version, input hashes and output hashes.</td></tr>
+      </table></div>
+
+      <h2 id="setup">Setting up a project</h2>
+      <p>The layout assumed is Lean in <code>lean/</code>, scripts in <code>scripts/</code> and lean-dump at <code>scripts/lean-dump</code>.</p>
+      <ol>
+        <li>Copy <code>templates/lean_audit_exporter.lean</code> and <code>templates/run_lean_audit.py</code> into <code>scripts/</code>.</li>
+        <li>Fill in the exporter’s three <code>EDIT</code> points: import every library root, list the project’s module prefixes, and list the modules allowed to contain <code>sorry</code> besides <code>*_deps</code>.</li>
+        <li>Run <code>python scripts/run_lean_audit.py</code> and commit the three files it writes.</li>
+        <li>Add the markers to the Blueprint and generate the page.</li>
+      </ol>
+      <p>Two Claude Code skills in <code>.claude/skills/</code> walk an agent through it. <strong>lean-dump-audit</strong> covers setting up and refreshing the audit and its failure modes. <strong>lean-dump-pages</strong> covers the markers, the ledger and the config, then generates the page and fixes each report.</p>
+      <p>The exporter template was checked against the project it was extracted from: filled in for that project, it reproduces the original exporter’s output byte for byte.</p>
+
+      <h2 id="conventions">Conventions</h2>
+      <div class="table-wrap"><table>
+        <tr><th>Name</th><th>Meaning</th><th>How the page treats it</th></tr>
+        <tr><td><code>EXT_…</code></td><td>An external input, a published theorem used without proof.</td><td>Listed under External inputs; needs <code>\literature</code>.</td></tr>
+        <tr><td><code>CONJ_…</code></td><td>A live conjecture.</td><td>In a hypothesis, makes the theorem CONDITIONAL.</td></tr>
+        <tr><td><code>UNPROVED…</code></td><td>An unproved internal claim.</td><td>As a hypothesis, CONDITIONAL; as a conclusion, it is the claim being proved.</td></tr>
+        <tr><td><code>*_deps</code> module</td><td>Where <code>sorry</code> may be written.</td><td>Anything that reaches it is CONDITIONAL, with <code>sorryAx</code> named.</td></tr>
+      </table></div>
+      <p>An unproved dependency should be an explicit hypothesis, <code>theorem t (h : CONJ_x …) : …</code>, rather than a <code>sorry</code> or a new axiom. That keeps the theorem axiom-clean and the dependency visible. A prefix in any dotted component counts, as in <code>Ns.EXT_foo</code>. A proposition named without a prefix is invisible to these checks.</p>
+
+      <h2 id="limits">What it does not claim</h2>
+      <p class="scope">A matching dependency set does not show that the TeX and Lean statements mean the same thing; that comparison is the reviewer’s job, and the page lays the two side by side to make it easier. A green <code>\leanok</code> is the author’s claim, which the page cross-checks but cannot prove. An ordinary hypothesis such as <code>h : 2 ≤ k</code> is scope, not a gap. And all the audit-backed checks describe the source version that was audited, nothing later.</p>
     </main>
-    <footer>lean-dump · side-by-side Blueprint/Lean pages</footer>
+    <footer>lean-dump · side-by-side Blueprint/Lean pages · <a href="checks.html">How to read a page</a> · <a href="https://github.com/eyalk11/lean-dump">GitHub</a></footer>
   </div>
 </body>
 </html>

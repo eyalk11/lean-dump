@@ -11,7 +11,8 @@ Inputs for one page:
    `proposition`, `corollary`, `definition`, `question`, `conjecture`), each
    with a `\label`.
 2. **An optional ledger JSON** keyed by Blueprint label.
-3. **An entry in the pages config.**
+3. **For batch runs only:** an entry in the pages config. A single case needs
+   no config.
 4. **The Lean audit files** in `lean/` (see the `lean-dump-audit` skill).
    Without them the page still renders, but says "NOT CHECKED".
 
@@ -58,7 +59,7 @@ On each node, after `\label{…}`:
 - **Consistency:** `"lean": null` together with `\leanok` (or with
   `"status": "full"`) is refused as an error.
 
-## 3. Pages config
+## 3. Pages config (only for batch runs)
 
 ```json
 {"pages": [{"blueprint": "blueprint/src/x_body.tex",
@@ -75,11 +76,13 @@ On each node, after `\label{…}`:
 ## 4. Generate
 
 ```bash
+python scripts/lean-dump/dump_theorems_with_lean.py --blueprint x_body.tex --ledger x.json --final thm:main
 python scripts/lean-dump/dump_theorems_with_lean.py --closed-case-pages pages.json
-python scripts/lean-dump/dump_theorems_with_lean.py --blueprint x_body.tex --ledger x.json --final thm:main --format html --output x.html
 ```
 
-The first form writes every page in the config; the second writes one page.
+The first form writes one page. `--ledger` and `--final` are optional, and the
+output defaults to `x_body_with_lean.html` beside the `.tex` (`--output`
+changes it). The second form writes every page in the config.
 
 If you change Lean, refresh the audit first (`lean-dump-audit`), so the page
 isn't marked stale. The run exits nonzero on page errors; pass
@@ -98,4 +101,5 @@ isn't marked stale. The run exits nonzero on page errors; pass
 
 Never hand-edit the generated HTML. Change the Blueprint, the ledger or the
 Lean, then regenerate. The pages link to the manual at
-https://eyalk11.github.io/lean-dump/ (published from `docs/`).
+https://eyalk11.github.io/lean-dump/checks.html (published from `docs/`;
+the full documentation is https://eyalk11.github.io/lean-dump/).

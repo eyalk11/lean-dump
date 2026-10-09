@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>About the Lean checks · lean-dump</title>
+  <meta name="description" content="How to read the Lean comparison page: audit freshness, hypotheses, dependencies, and examples of warning banners.">
+  <style>
+    :root { color-scheme: dark; --page:#081013; --ink:#f4f7f5; --muted:#b4c2bc; --lime:#b8ff61; --cyan:#39d4ff; --line:#344047; font-family:system-ui,sans-serif; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--page); font-size:16px; line-height:1.65; }
+    .shell { width:min(1040px,calc(100% - 40px)); margin:auto; }
+    header { display:flex; justify-content:space-between; flex-wrap:wrap; gap:1rem; padding:1.4rem 0; border-bottom:1px solid var(--line); }
+    a { color:var(--cyan); text-underline-offset:.22em; }
+    a:focus-visible, summary:focus-visible { outline:3px solid var(--lime); outline-offset:5px; }
+    nav { display:flex; flex-wrap:wrap; gap:1.4rem; }
+    .brand { color:var(--ink); font-weight:700; text-decoration:none; }
+    main { padding:3.5rem 0; }
+    .eyebrow { margin:0 0 .7rem; color:var(--lime); font-size:.9rem; font-weight:700; letter-spacing:.06em; }
+    h1 { max-width:850px; margin:0 0 1.5rem; font-size:clamp(2.3rem,6vw,4.5rem); line-height:1.1; letter-spacing:-.045em; }
+    .lede { max-width:800px; font-size:1.2rem; color:var(--muted); }
+    h2 { margin:3rem 0 1rem; font-size:1.7rem; letter-spacing:-.02em; }
+    h3 { margin:0 0 .5rem; font-size:1.12rem; }
+    p { max-width:850px; }
+    .checks { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border:1px solid var(--line); margin:1.5rem 0; }
+    .check { padding:1.4rem; background:#101b20; }
+    .check p { margin:.6rem 0 0; color:var(--muted); }
+    .number { color:var(--lime); font-size:.9rem; margin-bottom:.5rem; display:block; }
+    .scope { padding:1rem 1.3rem; border-left:3px solid var(--cyan); background:#10212a; }
+    code { font-size:.95em; overflow-wrap:anywhere; }
+    .examples { display:grid; gap:1.7rem; margin-top:1.5rem; }
+    .example { border-top:1px solid var(--line); padding-top:1.3rem; }
+    .example-label { font-size:.9rem; color:var(--muted); margin:0 0 .6rem; }
+    .banner { padding:1rem 1.2rem; border:1px solid; border-left-width:5px; border-radius:.3rem; font-weight:650; overflow-wrap:anywhere; }
+    .warning { color:#ffdc91; border-color:#dba844; background:#2c2517; }
+    .error { color:#ffb1b1; border-color:#ec7777; background:#301c20; }
+    .conditional { color:#c2d8ff; border-color:#729ee9; background:#14253f; }
+    .example p:last-child { margin-bottom:0; color:var(--muted); }
+    .ordinary { color:#d0f2dc; background:#142b22; border-left:3px solid #65c38b; padding:1rem 1.2rem; }
+    footer { padding:1.5rem 0 2.5rem; border-top:1px solid var(--line); color:var(--muted); }
+    @media(max-width:640px) { .checks { grid-template-columns:1fr; } main { padding-top:2.2rem; } }
+    .shot { margin:2rem 0 0; }
+    .shot img { width:100%; height:auto; border:1px solid var(--line); border-radius:8px; }
+    .shot figcaption { color:var(--muted); font-size:.9rem; margin-top:.5rem; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <a class="brand" href="./">lean-dump</a>
+      <nav aria-label="Main"><a href="./">Documentation</a><a href="./#verifications">All verifications</a><a href="#examples">Warning examples</a><a href="https://github.com/eyalk11/lean-dump">GitHub</a></nav>
+    </header>
+    <main>
+      <p class="eyebrow">ABOUT THE LEAN CHECKS</p>
+      <h1>Read the proof status.</h1>
+      <p class="lede">The Lean comparison page places each Blueprint statement beside its formal declaration. Its checks help you inspect what was formalized, what the proof depends on, and whether the saved audit still matches the source.</p>
+      <figure id="screenshot" class="shot"><img src="screenshot.png" alt="A comparison page: a Blueprint theorem with its proof on the left, its Lean counterpart with the named statement definition and proof on the right" width="1646" height="952"><figcaption>A comparison page: the Blueprint node on the left, its Lean counterpart on the right.</figcaption></figure>
+
+      <h2>Four questions, four different checks</h2>
+      <div class="checks">
+        <section class="check"><span class="number">01 / FRESHNESS</span><h3>Does the audit match this source?</h3><p>Source hashes cover Lean files, the audit code, toolchain and dependency lockfile. Changed inputs make the audit <strong>stale</strong>; a historical report without hashes has <strong>unknown</strong> freshness. A current report records a successful build and audit of those inputs.</p></section>
+        <section class="check"><span class="number">02 / AXIOMS</span><h3>What does the proof ultimately rely on?</h3><p>Lean’s axiom collection follows dependencies transitively, including dependencies of dependencies. It detects <code>sorryAx</code> and project axioms even when they come from another lemma. The usual Lean axioms <code>propext</code>, <code>Classical.choice</code> and <code>Quot.sound</code> are allowed.</p></section>
+        <section class="check"><span class="number">03 / HYPOTHESES</span><h3>Under which assumptions is it true?</h3><p>Expandable details show proposition hypotheses and instances from the elaborated type, including unnamed arrows, implicit assumptions and section variables. The full type is available too. The existing conditional-status check separately flags names beginning <code>CONJ_</code>, <code>UNPROVED</code> or <code>EXT_</code>.</p></section>
+        <section class="check"><span class="number">04 / CONSISTENCY</span><h3>Do the documented dependencies agree?</h3><p>The Blueprint’s dependency paths are compared with compiled type and proof references among mapped nodes. Audited project helpers are followed; compiler-generated helpers are expanded. External library internals are not expanded. Differences are prompts for review, since two proofs can use different arguments.</p></section>
+      </div>
+      <p class="scope"><strong>Check the evidence’s status first.</strong> Generating or opening this page does not run Lean. Missing or stale audit data leaves the new hypothesis and consistency checks unchecked. A dependency match does not establish that the manuscript and Lean statements have identical meaning.</p>
+
+      <h2 id="examples">When a warning appears</h2>
+      <p>The banners below are <strong>illustrative examples</strong>, not live findings about this proof. The comparison page reports its own status.</p>
+      <div class="examples">
+        <section class="example"><p class="example-label">EXAMPLE · historical report</p><div class="banner warning">Audit freshness: unknown</div><p>The saved report has no verifiable source hashes. “Unknown” does not mean the proof is wrong; it means the report cannot certify this version. Generate a new source-bound audit.</p></section>
+        <section class="example"><p class="example-label">EXAMPLE · changed source</p><div class="banner warning">Audit freshness: stale — sources or configuration changed</div><p>A proof, dependency pin, toolchain or audit input changed after the audit. Even a declaration whose name stayed the same needs a new check.</p></section>
+        <section class="example"><p class="example-label">EXAMPLE · missing audit</p><div class="banner warning">NOT CHECKED: the axiom footprint is absent</div><p>There is no saved dependency evidence. Missing evidence must not be read as “no unproved dependencies.”</p></section>
+        <section class="example"><p class="example-label">EXAMPLE · inherited proof hole</p><div class="banner conditional">CONDITIONAL: Proof depends on sorryAx</div><p>The proof reaches an admitted step, possibly several lemmas away. It cannot be presented as an unconditional result. An explicitly named project axiom or unproved hypothesis is reported similarly, with its name.</p></section>
+        <section class="example"><p class="example-label">EXAMPLE · missing formal counterpart</p><div class="banner error">ERROR: Lean declaration not found: Example.missingLemma</div><p>A Blueprint node points to a declaration the source extractor cannot find. Check the mapping, spelling and source coverage; a green Blueprint marker alone does not fix the missing counterpart.</p></section>
+        <section class="example"><p class="example-label">EXAMPLE · dependency discrepancy</p><div class="banner warning">Dependency difference — Lean reaches lem:helper without a Blueprint dependency path</div><p>An amber badge and an expanded notice mark each affected statement. Inspect the two proofs. The Blueprint may have omitted a dependency, or Lean may use a different argument. The reverse discrepancy—a documented dependency absent from the compiled closure—is also reported.</p></section>
+        <section class="example"><p class="example-label">EXAMPLE · incomplete Blueprint metadata</p><div class="banner warning">INCOMPLETE: proof has no \leanok marker</div><p>The Blueprint has not marked the proof as formalized. A Lean proof may exist, but the documentation must be checked before adding the marker.</p></section>
+      </div>
+
+      <h2>The proof summary</h2>
+      <p>“The final theorem is fully proven from Lean’s standard axioms” appears in the audit box only when the current audit covers the final theorem, it has no nonstandard axiom or flagged unproved hypothesis, and its Blueprint statement and proof are marked complete. “Sorry-free” includes the proof’s transitive dependencies. Both claims concern the final theorem, not the entire repository. Ordinary mathematical hypotheses still apply.</p>
+
+      <h2>When a theorem names a proposition</h2>
+      <p>A signature such as <code>theorem main_bound : UNPROVED_main_bound</code> uses a named proposition as its statement. The comparison page shows that proposition’s source in an expanded <strong>Statement definition</strong> block above the proof, when the current compiled audit resolves it. The name alone does not determine proof status.</p>
+
+      <p>The <strong>Full elaborated type</strong> inspector unfolds named statement definitions through Lean, showing their quantifiers and conclusion. The source definition remains separately visible in the <strong>Statement definition</strong> block.</p>
+
+      <h2>An ordinary hypothesis is not a warning</h2>
+      <div class="ordinary"><code>h : n ≥ 2</code> describes the theorem’s scope. It does not mean that a supporting theorem remains unproved.</div>
+      <p>Read every displayed assumption in context. A clean axiom audit can accompany a conditional theorem. Conversely, a theorem with no explicit assumptions can still inherit an axiom or <code>sorry</code> from its proof dependencies.</p>
+
+      <h2>What about the graph colors and #print axioms?</h2>
+      <p>The graphical Blueprint reads manually supplied <code>\leanok</code> markers. Its green colors report those markers; the graph itself does not execute Lean. The comparison page adds the saved dependency audit and the checks described above.</p>
+      <p><code>#print axioms theoremName</code> asks Lean for that declaration’s transitive axiom dependencies. An old output quoted in a comment is historical evidence, and a command appearing in source is only an instruction to run it. Trailing diagnostic commands are omitted from displayed theorem snippets; they remain in the Lean source.</p>
+      <p>Mathematical review still needs to compare quantifiers, assumptions, constants, normalization and conclusions against the manuscript. These checks make that review easier; they do not replace it.</p>
+      <p><a href="./">lean-dump documentation</a> · <a href="https://github.com/eyalk11/lean-dump">GitHub</a></p>
+    </main>
+    <footer>lean-dump · side-by-side Blueprint/Lean pages</footer>
+  </div>
+</body>
+</html>
