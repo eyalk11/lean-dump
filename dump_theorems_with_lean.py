@@ -32,6 +32,8 @@ STOP_WORDS = {
 LEAN_DECL = re.compile(
     r"(?m)^(?P<kw>theorem|lemma|example)\s+(?P<name>[A-Za-z_][\w'.]*)"
 )
+# The manual for these pages, published from docs/ of this repository.
+MANUAL_URL = "https://eyalk11.github.io/lean-dump/"
 PART_RE = re.compile(r"\\part\{Part\s+([A-G])\b", re.I)
 BEGIN_RE = re.compile(
     r"\\begin\{(" + "|".join(THEOREM_ENVS) + r")\}"
@@ -1486,7 +1488,7 @@ def render_closed_case_html(
         + warning_summary
     )
     navigation = " ".join(f'<a href="#{key}">{heading}</a>' for key, heading, _ in layout)
-    navigation += ' <a href="lean_dump_about.html">About the Lean checks</a>'
+    navigation += f' <a href="{MANUAL_URL}">About the Lean checks</a>'
     toggles = "".join(
         toggle_checkbox(body_class, f"{text} ({len(group)})", True)
         for body_class, text, group in (

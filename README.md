@@ -14,6 +14,30 @@ actually rests on.
 
 Standard library only; Python 3.9+.
 
+![A comparison page: Blueprint node beside its Lean counterpart](docs/screenshot.png)
+
+How to read a page (audit freshness, axioms, hypotheses, dependency
+consistency, warning banners): **[About the Lean checks](https://eyalk11.github.io/lean-dump/)**.
+Every generated page links there.
+
+## Producing the inputs
+
+Two Claude Code skills in `.claude/skills/` walk through it:
+
+- **`lean-dump-audit`** sets up and refreshes the Lean audit files
+  (`axiom_footprint.json`, `declaration_details.json`,
+  `axiom_footprint.meta.json`).
+- **`lean-dump-pages`** covers the Blueprint markers, the correspondence ledger
+  and the pages config, then generates the pages and fixes what they report.
+
+Templates for a new project, to copy into `scripts/`:
+
+- **`templates/lean_audit_exporter.lean`:** the Lean exporter. Fill in its three
+  `EDIT` points: imports, project module prefixes and the modules allowed to
+  contain `sorry`.
+- **`templates/run_lean_audit.py`:** builds, runs the exporter and writes the
+  three files together with source hashes.
+
 ## Modes
 
 **Blueprint page** (one standalone Blueprint):
