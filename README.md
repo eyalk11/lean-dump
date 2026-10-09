@@ -178,3 +178,7 @@ A matching dependency set does not show that the TeX and Lean statements mean
 the same thing; the page lays them side by side so a reviewer can check that.
 `\leanok` is the author's claim, which the page cross-checks. Audit-backed
 results describe the audited source version only.
+
+## License
+
+[MIT](LICENSE). `vendor/gh-tex-viewer` is a separate repository ([eyalk11/gh-tex-viewer](https://github.com/eyalk11/gh-tex-viewer)), not covered by this license.
