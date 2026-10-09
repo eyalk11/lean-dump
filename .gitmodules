@@ -1,0 +1,3 @@
+[submodule "vendor/gh-tex-viewer"]
+	path = vendor/gh-tex-viewer
+	url = https://github.com/eyalk11/gh-tex-viewer.git
