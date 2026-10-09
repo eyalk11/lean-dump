@@ -1,13 +1,16 @@
 # lean-dump
 
-Side-by-side LaTeX/Lean pages: every theorem-like statement of a manuscript or
+Side-by-side LaTeX/Lean pages: This is a modern replacement to standard blueprint with dependency graph.
+
+- Verifies much more things! 
+- Displays much more things!
+
 a [leanblueprint](https://github.com/PatrickMassot/leanblueprint) `.tex`, shown
 beside the Lean declaration that formalises it, with what that declaration
 actually rests on.
 
 - `dump_theorems_with_lean.py` — the page generator.
-- `lean_audit_report.py` — reads the saved Lean axiom/dependency audit and
-  renders its freshness and consistency panels.
+- 
 - `vendor/gh-tex-viewer` — submodule; its `render.js` typesets statements in
   the browser (KaTeX). Clone with `--recursive`, or run
   `git submodule update --init --recursive`.
