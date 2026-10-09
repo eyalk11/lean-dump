@@ -246,7 +246,7 @@ def extract_lean(lean_dir: Path, qualified: bool = False) -> list[LeanItem]:
 
 
 def part_hint(item: LeanItem) -> str:
-    match = re.search(r"(?:part|fei_part_)([a-g])", f"{item.name} {item.file}", re.I)
+    match = re.search(r"part_?([a-g])", f"{item.name} {item.file}", re.I)
     return match.group(1).upper() if match else ""
 
 
@@ -533,6 +533,115 @@ EXTERNAL_CSS = (
 )
 
 
+CLOSED_CASE_ENVS = (
+    "theorem", "lemma", "proposition", "corollary", "definition",
+    "question", "conjecture",
+)
+CLOSED_CASE_BEGIN_RE = re.compile(
+    r"\\begin\{(" + "|".join(CLOSED_CASE_ENVS) + r")\}"
+)
+LABEL_RE = re.compile(r"\\label\{([^}]*)\}")
+LEAN_MACRO_RE = re.compile(r"\\lean\{([^}]*)\}")
+
+
+def closed_case_nodes(text: str) -> list[tuple[str, str, str, int]]:
+    """Every environment, as (label, lean name, marker, insertion offset).
+
+    The insertion point is after the statement, and after the proof that
+    immediately follows it when there is one -- a remark wedged between a
+    statement and its proof reads badly.
+    """
+    nodes = []
+    for match in CLOSED_CASE_BEGIN_RE.finditer(text):
+        env = match.group(1)
+        end_marker = rf"\end{{{env}}}"
+        end = text.find(end_marker, match.end())
+        if end < 0:
+            raise ValueError(f"unclosed {env} at offset {match.start()}")
+        end += len(end_marker)
+        body = text[match.start():end]
+        label_match = LABEL_RE.search(body)
+        if not label_match:
+            continue
+        # A node with no `\lean{}` still gets a generated remark: those are
+        # exactly the nodes whose Lean status is prose, and prose is what rots.
+        lean_names = LEAN_MACRO_RE.findall(body)
+        if len(lean_names) > 1:
+            raise ValueError(
+                f"{label_match.group(1)}: {len(lean_names)} \\lean{{}} macros; "
+                f"a closed-case node names exactly one declaration"
+            )
+        lean_name = lean_names[0] if lean_names else ""
+        marker = "none"
+        if r"\leanok" in body:
+            marker = "leanok"
+        elif r"\notready" in body:
+            marker = "notready"
+        tail = text[end:]
+        proof = re.match(r"\s*\\begin\{proof\}", tail)
+        if proof:
+            proof_end = text.find(r"\end{proof}", end)
+            if proof_end < 0:
+                raise ValueError(f"unclosed proof after {label_match.group(1)}")
+            end = proof_end + len(r"\end{proof}")
+        nodes.append((label_match.group(1), lean_name, marker, end))
+    return nodes
+
+
+# One fully qualified declaration name.  leanblueprint itself accepts
+# `\lean{A, B}`, but the ledger's `lean` field and the side-by-side page each
+# resolve exactly one name: `\lean{A, B}` matched the ledger here as a string
+# and then matched nothing on the page (prop:unate, for one commit).
+LEAN_NAME_RE = re.compile(r"[A-Za-z_][\w'.]*")
+
+
+def check_lean_names(
+    named: list[tuple[str, str, bool]], source: Path, known: set[str], lean_dir: Path
+) -> int:
+    """Refuse a named Lean counterpart that is not one name, or is declared nowhere.
+
+    `named` is (label, name, claimed) triples, `claimed` meaning the node is
+    `\\leanok`; empty names are skipped.  `known` is the set of qualified
+    declaration names `extract_lean` reads from
+    `lean_dir`.  Comparing the Blueprint against the ledger as strings let
+    `lem:onecapture` go green naming a declaration that did not exist.
+
+    A malformed name, or a `\\leanok` node whose name resolves to nothing, is
+    fatal.  An unclaimed node naming nothing already renders as an error card,
+    so it is reported on stderr rather than blocking every page after it --
+    and the count of those is **returned**, so a caller that regenerates
+    several pages can still fail at the end.  Printing to stderr and returning
+    normally is what let a caller exit 0 with errors on screen.
+
+    This is a textual scan, so it catches a typo or a wrong namespace without
+    compiling anything; it does not prove the name elaborates.  A per-case
+    Lean marker audit is what asks Lean.
+    """
+    bad, unclaimed = [], []
+    for label, name, claimed in named:
+        if not name:
+            continue
+        if not LEAN_NAME_RE.fullmatch(name):
+            bad.append(f"    {label}: {name!r} is not a single Lean declaration name")
+        elif name not in known:
+            line = f"    {label}: {name} is declared nowhere in {lean_dir.as_posix()}/*.lean"
+            (bad if claimed else unclaimed).append(line)
+    if unclaimed:
+        print(
+            f"ERROR: {source}: {len(unclaimed)} Lean name(s) resolve to nothing:\n"
+            + "\n".join(unclaimed),
+            file=sys.stderr,
+        )
+    if bad:
+        listed = "\n".join(bad)
+        raise ValueError(
+            f"{source}: {len(bad)} Lean counterpart(s) do not resolve:\n{listed}\n"
+            f"  Name exactly one fully qualified declaration per node; list any "
+            f"further ones in the ledger's 'lean_statement'."
+        )
+    return len(unclaimed)
+
+
 @dataclass
 class BlueprintNode:
     item: ManuscriptItem
@@ -541,7 +650,7 @@ class BlueprintNode:
     proof_marker: str
     uses: list[str]
     # (reference, locator) pairs from `\literature{..}{..}`; see
-    # docs/closed_cases/README.md, "Literature references for external inputs".
+    # the project's closed-case conventions, "Literature references for external inputs".
     literature: list[tuple[str, str]]
 
 
@@ -588,7 +697,6 @@ def literature_references(source: str) -> list[tuple[str, str]]:
 
 def extract_blueprint(path: Path) -> list[BlueprintNode]:
     """Every labelled Blueprint node, with its statement, proof and `\\uses` edges."""
-    from generate_lean_blueprint import CLOSED_CASE_BEGIN_RE, closed_case_nodes
 
     text = path.read_text(encoding="utf-8")
     # `closed_case_nodes` ends each node after its proof, before any generated
@@ -699,15 +807,13 @@ def check_leanok_has_counterpart(
     graph while nothing in the development is checked against it, and the
     marker audits cannot catch it: their rules all begin by looking a
     declaration up, so an entry with `"lean": null` is skipped before any of
-    them runs.  `scripts/generate_lean_blueprint.py` rejects the combination
+    them runs.  The Blueprint generator rejects the combination
     when the remarks are generated; this page is built from the same two
     sources and refuses it here too, so the error surfaces without Lean being
     compiled at all.
 
     The fix is a declaration, not a quieter marker, whenever the content is
-    formalisable: `cor:gmp-is-han` -- the node this check was written for --
-    was two proved identities divided by four, and it is now
-    `FEI.Han.gmp3_iff_affinity_le`.
+    formalisable.
     """
     bad = []
     for node in nodes:
@@ -918,7 +1024,7 @@ PAGE_ERRORS = 0
 def load_footprint(lean_dir: Path) -> dict[str, dict]:
     """Per-declaration proof and statement dependencies, or `{}` if not emitted.
 
-    Written by `scripts/lean_audit_sorry_axioms.lean` under `FEI_AUDIT_EMIT=1`.
+    Written by the project's Lean axiom-audit exporter.
     Absence is reported on the page rather than treated as cleanliness: a
     missing footprint means the check did not run, which must not look like
     "nothing depends on anything unproved".
@@ -943,7 +1049,7 @@ def dependency_gaps(
     module, or a project axiom.  `assumes` is what the statement is conditional
     on: a theorem of the form `(h : CONJ_x ...) -> ...` is proved, is
     axiom-clean, and still establishes nothing until CONJ_x is.  That second
-    shape is the one README prefers for an unproved dependency, so a check that
+    shape is the preferred one for an unproved dependency, so a check that
     only looked at axioms would call the most conditional results in the
     development unconditional.
     """
@@ -1192,7 +1298,7 @@ def render_closed_case_html(
                 notes.append(f"External input: {external_reason(node, record)}.")
                 if not node.literature:
                     notes.append(
-                        "No \\literature reference: docs/closed_cases/README.md requires one, "
+                        "No \\literature reference: the closed-case conventions require one, "
                         "with an exact locator, on every external input."
                     )
                 elif not all(locator for _, locator in node.literature):
@@ -1328,8 +1434,8 @@ def render_closed_case_html(
     if not footprint:
         warnings.append(
             f"NOT CHECKED: lean/{FOOTPRINT_NAME} is absent, so no card on this page has "
-            "been checked for what it rests on. Regenerate it with "
-            "<code>FEI_AUDIT_EMIT=1 lake env lean scripts/lean_audit_sorry_axioms.lean</code>."
+            "been checked for what it rests on. Regenerate it with the project's "
+            "Lean axiom-audit exporter."
         )
     if conditional:
         warnings.append(
@@ -1464,7 +1570,7 @@ def render_closed_case_html(
 # Typeset statements
 #
 # Statements are typeset in the browser by render.js from the gh-tex-viewer
-# extension, a git submodule at blueprint/vendor/gh-tex-viewer: it hides math
+# extension, a git submodule at vendor/gh-tex-viewer: it hides math
 # behind placeholders, runs marked over the prose, and swaps KaTeX output back in.
 # It reads Markdown with TeX, not LaTeX, so the Blueprint's text-mode markup
 # (theorem environments, \label/\lean/\uses/\leanok, \cref, \emph, \texttt) is
@@ -1657,11 +1763,11 @@ def blueprint_preamble(path: Path) -> str:
 
 def typeset_head(preamble: str) -> str:
     cdn = "https://cdn.jsdelivr.net/npm"
-    render_path = Path(__file__).resolve().parent.parent / "blueprint/vendor/gh-tex-viewer/render.js"
+    render_path = Path(__file__).resolve().parent / "vendor/gh-tex-viewer/render.js"
     if not render_path.exists():
         raise SystemExit(
             f"{render_path} is missing: the gh-tex-viewer submodule is not checked out. "
-            "Run: git submodule update --init blueprint/vendor/gh-tex-viewer"
+            "Run: git submodule update --init --recursive"
         )
     render_js = render_path.read_text(encoding="utf-8")
     # A JSON string is a valid JS literal; escaping "</" keeps it inside <script>.
@@ -1755,7 +1861,6 @@ def write_closed_case_page(
     # Every node, not only the configured final: a name that does not resolve
     # used to surface on stderr only when it was the final theorem's, and was
     # otherwise just an "error" card in a page nobody had opened yet.
-    from generate_lean_blueprint import check_lean_names
 
     global PAGE_ERRORS
     PAGE_ERRORS += check_lean_names(
@@ -1834,19 +1939,19 @@ def _exit_on_page_errors(allowed: bool) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--manuscript", type=Path, default=Path("old/fei_master_parts_A_G.tex"))
+    parser.add_argument("--manuscript", type=Path, help="manuscript .tex (manuscript mode)")
     parser.add_argument("--lean-dir", type=Path, default=Path("lean"))
-    parser.add_argument("--output", type=Path, default=Path("theorems_A_G_with_lean.md"))
+    parser.add_argument("--output", type=Path)
     parser.add_argument(
         "--overrides", type=Path,
-        help="curated JSON correspondence ledger (defaults to scripts/theorem_lean_correspondence.json)",
+        help="curated JSON correspondence ledger (optional)",
     )
     parser.add_argument("--threshold", type=float, default=0.55)
     parser.add_argument("--format", choices=("markdown", "html", "json"), default="markdown")
     parser.add_argument(
         "--closed-case-pages", type=Path, metavar="CONFIG",
         help="write every closed-case page listed in CONFIG, with its Blueprint, ledger and "
-             "final theorem (scripts/closed_case_pages.json)",
+             "final theorem",
     )
     parser.add_argument(
         "--blueprint", type=Path,
@@ -1861,9 +1966,7 @@ def main() -> None:
         "--allow-page-errors", action="store_true",
         help="exit 0 even when a page reported an ERROR on stderr. Without it, any "
              "'resolve to nothing' or 'final theorem is not fully Lean-ready' report "
-             "makes the run fail, so a CI step can gate on it. Two closed cases are "
-             "known-bad today (bounded algebraic degree, signed read two route A), "
-             "which is why scripts/regenerate_closed_case_pages.ps1 passes this flag",
+             "makes the run fail, so a CI step can gate on it",
     )
     parser.add_argument(
         "--no-lean-defs", action="store_true",
@@ -1900,8 +2003,8 @@ def main() -> None:
     if args.blueprint:
         if args.format != "html":
             parser.error("--blueprint writes HTML only; pass --format html")
-        if args.output == parser.get_default("output"):
-            parser.error("--blueprint needs an explicit --output")
+        if args.output is None:
+            parser.error("--blueprint needs --output")
         write_closed_case_page(
             args.blueprint, args.ledger, args.final, args.output,
             extract_lean(args.lean_dir, qualified=True), args.lean_dir,
@@ -1910,14 +2013,12 @@ def main() -> None:
         _exit_on_page_errors(args.allow_page_errors)
         return
 
+    if args.manuscript is None or args.output is None:
+        parser.error("manuscript mode needs --manuscript and --output")
     manuscripts = extract_manuscript(args.manuscript)
     lean_items = extract_lean(args.lean_dir)
-    correspondence = args.overrides
-    if correspondence is None:
-        default_correspondence = Path(__file__).with_name("theorem_lean_correspondence.json")
-        correspondence = default_correspondence if default_correspondence.exists() else None
     matches = match_items(
-        manuscripts, lean_items, load_overrides(correspondence), args.threshold
+        manuscripts, lean_items, load_overrides(args.overrides), args.threshold
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     if args.format == "json":

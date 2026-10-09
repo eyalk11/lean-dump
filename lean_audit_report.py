@@ -29,8 +29,11 @@ def source_hashes(root: Path) -> dict[str, str]:
     paths.update(root / name for name in (
         "lean-toolchain", "lakefile.toml", "lake-manifest.json",
         "lean/axiom_clean.txt", "scripts/run_lean_audit.py",
-        "scripts/lean_audit_report.py",
     ))
+    # This module is audit code too, wherever the project keeps it.
+    here = Path(__file__).resolve()
+    if here.is_relative_to(root.resolve()):
+        paths.add(root / here.relative_to(root.resolve()))
     return {p.relative_to(root).as_posix(): digest(p) for p in sorted(paths) if p.is_file()}
 
 
