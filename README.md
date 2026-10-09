@@ -2,7 +2,7 @@
 
 **Every Blueprint statement beside its Lean proof, and what that proof rests on.**
 
-A modern replacement for the standard Blueprint with its dependency graph:
+A modern alternative to the [leanblueprint](https://github.com/PatrickMassot/leanblueprint) dependency graph:
 
 - **Verifies much more**: proof axioms and `sorry`, conditional hypotheses,
   marker consistency, Blueprint ↔ Lean dependency agreement, audit freshness.

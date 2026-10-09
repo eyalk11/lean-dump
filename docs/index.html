@@ -80,9 +80,10 @@
       <nav aria-label="Main"><a href="#how">How it works</a><a href="#features">Features</a><a href="#verifications">Verifications</a><a href="#usage">Usage</a><a href="#setup">Setup</a><a href="checks.html">Reading a page</a><a href="https://github.com/eyalk11/lean-dump">GitHub</a></nav>
     </header>
     <main>
-      <p class="eyebrow">BLUEPRINT ⇄ LEAN</p>
+      <p class="eyebrow">A MODERN ALTERNATIVE TO THE LEANBLUEPRINT DEPENDENCY GRAPH</p>
       <h1>Every Blueprint statement beside its Lean proof, and what that proof rests on.</h1>
       <p class="lede">lean-dump turns a <a href="https://github.com/PatrickMassot/leanblueprint">leanblueprint</a> <code>.tex</code> into one HTML page. Each node’s typeset statement and proof sits beside the Lean declaration that formalises it. The page states which claims are proved unconditionally, which rest on <code>sorry</code>, an axiom or an unproved hypothesis, and where the Blueprint and Lean disagree.</p>
+      <p class="lede">Where the <a href="https://github.com/PatrickMassot/leanblueprint">leanblueprint</a> dependency graph colours each node from hand-written <code>\leanok</code> marks, lean-dump checks them. It resolves every Lean name, audits axioms, <code>sorry</code> and conditional hypotheses, compares <code>\uses</code> with Lean’s compiled dependencies, and shows each statement and proof beside its Lean source.</p>
       <div class="actions"><a class="button primary" href="example/read-k-short-capture.html">See a live example</a><a class="button" href="#usage">Generate a page</a><a class="button" href="checks.html">How to read a page</a><a class="button" href="https://github.com/eyalk11/lean-dump">Source on GitHub</a></div>
       <figure id="example" class="shot live">
         <iframe src="example/read-k-short-capture.html" title="Live example: a generated lean-dump page" loading="lazy"></iframe>
